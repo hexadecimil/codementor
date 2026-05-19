@@ -3,27 +3,26 @@ import axios from "axios";
 const httpClient = axios.create({ baseURL: "https://openrouter.ai/api/v1" });
 
 /**
- * Demande au LLM une explication du rôle d'un fichier de code.
- * @param {string} content
- * @returns {Promise<string>}
+ * Envoie le contenu d'un fichier au LLM et retourne l'analyse complète :
+ * résumé du fichier, erreurs détectées et correction suggérée (0..1 par erreur).
+ *
+ * @param {object} file
+ * @param {string} file.path
+ * @param {string} file.content
+ * @param {string} file.language
+ * @returns {Promise<{
+ *   file_summary: string,
+ *   errors: Array<{
+ *     line_number: number,
+ *     error_type: string,
+ *     severity: string,
+ *     description: string,
+ *     code_snippet: string,
+ *     suggested_fix: { description: string, suggested_code: string } | null
+ *   }>
+ * }>}
  */
-export const explainCode = async (content) => {
-};
-
-/**
- * Demande au LLM la détection d'erreurs dans un fichier de code.
- * @param {string} content
- * @returns {Promise<object[]>}
- */
-export const detectErrors = async (content) => {
-};
-
-/**
- * Demande au LLM une correction pour une erreur détectée.
- * @param {object} error
- * @returns {Promise<object>}
- */
-export const suggestFix = async (error) => {
+export const analyzeFile = async (file) => {
 };
 
 /**

@@ -7,6 +7,8 @@ export default class DetectedError {
         severity,
         description,
         code_snippet,
+        fix_description,
+        fix_suggested_code,
     } = {}) {
         this.id = id;
         this.analyzed_file_id = analyzed_file_id;
@@ -15,5 +17,7 @@ export default class DetectedError {
         this.severity = severity;
         this.description = description;
         this.code_snippet = code_snippet;
+        this.fix_description = fix_description;
+        this.fix_suggested_code = fix_suggested_code;
     }
 }

@@ -24,11 +24,11 @@ export const fetchGitHubUser = async (token) => {
 };
 
 /**
- * Recherche un utilisateur par son identifiant GitHub.
- * @param {string|number} githubId
- * @returns {Promise<object|null>}
+ * Crée ou met à jour l'utilisateur en BDD (upsert via INSERT ... ON DUPLICATE KEY UPDATE).
+ * @param {object} githubUser
+ * @returns {Promise<object>}
  */
-export const findUserByGithubId = async (githubId) => {
+export const createOrUpdateUser = async (githubUser) => {
 };
 
 /**
@@ -36,21 +36,5 @@ export const findUserByGithubId = async (githubId) => {
  * @param {number} id
  * @returns {Promise<object|null>}
  */
-export const findUserById = async (id) => {
-};
-
-/**
- * Persiste un nouvel utilisateur en BDD.
- * @param {object} user
- * @returns {Promise<object>}
- */
-export const saveUser = async (user) => {
-};
-
-/**
- * Crée ou met à jour l'utilisateur à partir d'un profil GitHub.
- * @param {object} githubUser
- * @returns {Promise<object>}
- */
-export const createOrUpdateUser = async (githubUser) => {
+export const findById = async (id) => {
 };

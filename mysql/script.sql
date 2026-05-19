@@ -75,29 +75,19 @@ CREATE TABLE t_analyzed_file (
 
 -- =====================================================================
 -- t_detected_error : une erreur détectée dans un fichier analysé
+-- La correction suggérée par l'IA est intégrée ici (cardinalité 0..1)
+-- via fix_description / fix_suggested_code nullables.
 -- =====================================================================
 CREATE TABLE t_detected_error (
-    pk_detected_error INT AUTO_INCREMENT PRIMARY KEY,
-    fk_analyzed_file  INT NOT NULL,
-    line_number       INT UNSIGNED COMMENT 'Numéro de ligne au moment de l''analyse',
-    error_type        ENUM('syntax','logic','security','performance','style','deprecation') NOT NULL,
-    severity          ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
-    description       TEXT NOT NULL COMMENT 'Explication de l''erreur',
-    code_snippet      TEXT          COMMENT 'Extrait de code fautif (contexte de quelques lignes)',
+    pk_detected_error  INT AUTO_INCREMENT PRIMARY KEY,
+    fk_analyzed_file   INT NOT NULL,
+    line_number        INT UNSIGNED COMMENT 'Numéro de ligne au moment de l''analyse',
+    error_type         ENUM('syntax','logic','security','performance','style','deprecation') NOT NULL,
+    severity           ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+    description        TEXT NOT NULL COMMENT 'Explication de l''erreur',
+    code_snippet       TEXT          COMMENT 'Extrait de code fautif (contexte de quelques lignes)',
+    fix_description    TEXT          COMMENT 'Explication de la correction proposée (null si aucune)',
+    fix_suggested_code TEXT          COMMENT 'Code corrigé proposé (null si aucune correction)',
     CONSTRAINT fk_detected_error_analyzed_file
         FOREIGN KEY (fk_analyzed_file) REFERENCES t_analyzed_file(pk_analyzed_file) ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-
--- =====================================================================
--- t_suggested_fix : correction proposée pour une erreur (cardinalité 0..1)
--- UNIQUE sur fk_detected_error garantit le 0..1 de l'ER
--- =====================================================================
-CREATE TABLE t_suggested_fix (
-    pk_suggested_fix  INT AUTO_INCREMENT PRIMARY KEY,
-    fk_detected_error INT NOT NULL UNIQUE,
-    description       TEXT NOT NULL COMMENT 'Explication de la correction',
-    suggested_code    TEXT NOT NULL COMMENT 'Code corrigé proposé',
-    CONSTRAINT fk_suggested_fix_detected_error
-        FOREIGN KEY (fk_detected_error) REFERENCES t_detected_error(pk_detected_error) ON DELETE CASCADE
 ) ENGINE = InnoDB;

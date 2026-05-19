@@ -1,9 +1,9 @@
 import {
-    createAnalysis,
-    findAnalysisById,
-    findAnalysesByProjectId,
+    create,
+    findById,
+    listByProjectId,
+    getFullResult,
 } from "../services/analysisService.js";
-import { enqueue, getStatus as getQueueStatus } from "../services/queueService.js";
 
 /**
  * Démarre une nouvelle analyse pour un projet et la place en file d'attente.
@@ -24,7 +24,7 @@ export const getStatus = async (req, res) => {
 };
 
 /**
- * Retourne le résultat complet d'une analyse (fichiers, erreurs, mermaid).
+ * Retourne le résultat complet d'une analyse (fichiers, erreurs/fixes, mermaid).
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @returns {Promise<void>}
