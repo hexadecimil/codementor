@@ -26,7 +26,7 @@ app.use(sanitize);
 // --- Routes API ---
 app.use("/codementor/api", router);
 
-// --- Documentation Swagger ---
+// --- Documentation Swagger --- à verif
 setupSwagger(app);
 
 // --- Gestion des erreurs de validation (express-joi-validation) ---
