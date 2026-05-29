@@ -60,7 +60,12 @@ export const logout = (req, res) => {
 export const getCurrentUser = async (req, res) => {
   const userId = req.session.userId;
 
-  const user = findUserById(userId);
+  const user = await findUserById(userId);
 
-  res.json(user);
+  if (!user) {
+    return res.status(404).json({ error: "Utilisateur introuvable" });
+  }
+  const { access_token, ...safeUser } = user;
+  
+  res.json(safeUser);
 };

@@ -71,7 +71,7 @@ export const createOrUpdateUser = async (user) => {
     [github_id],
   );
 
-  return rows[0];
+  return rows[0] ?? null;
 };
 
 /**
@@ -80,10 +80,10 @@ export const createOrUpdateUser = async (user) => {
  * @returns {Promise<object|null>}
  */
 export const findUserById = async (id) => {
-  const rows = await pool.query(
+  const [rows] = await pool.query(
     `SELECT pk_user AS id, github_id, access_token, created_at FROM t_user WHERE pk_user = ?`,
     [id]
-  )
+  );
 
-  return rows[0];
+  return rows[0] ?? null;
 };

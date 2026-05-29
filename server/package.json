@@ -8,7 +8,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node --watch server.js"
+        "dev": "node server.js"
     },
     "dependencies": {
         "@octokit/oauth-app": "^8.0.3",
