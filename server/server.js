@@ -6,6 +6,7 @@ import session from "express-session";
 import router from "./routes/index.js";
 import { sanitize } from "./middlewares/sanitizeMiddleware.js";
 import { setupSwagger } from "./swagger.js";
+import { recoverInterruptedAnalyses } from "./services/analysisService.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,14 +27,14 @@ app.use(sanitize);
 // --- Routes API ---
 app.use("/codementor/api", router);
 
-// --- Documentation Swagger --- à verif
+// --- Documentation Swagger ---
 setupSwagger(app);
 
 // --- Gestion des erreurs de validation (express-joi-validation) ---
 app.use((err, req, res, next) => {
     if (err && err.error && err.error.isJoi) {
         return res.status(400).json({
-            message: "Données invalides.",
+            error: "Données invalides.",
             details: err.error.details.map((d) => d.message),
         });
     }
@@ -42,6 +43,11 @@ app.use((err, req, res, next) => {
 
 // --- Gestionnaire d'erreurs général ---
 app.use((err, req, res, next) => {
+    // Erreur applicative typée (AppError) : on renvoie son code et son message.
+    if (err.statusCode) {
+        return res.status(err.statusCode).json({ error: err.message });
+    }
+    // Sinon, erreur inattendue : 500 sans exposer de détail interne.
     console.error("Erreur non gérée :", err);
     res.status(500).json({ error: "Erreur serveur." });
 });
@@ -49,6 +55,9 @@ app.use((err, req, res, next) => {
 // --- Démarrage ---
 const startServer = async () => {
     try {
+        // Nettoie les analyses laissées en cours par un précédent arrêt du serveur.
+        await recoverInterruptedAnalyses();
+
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });

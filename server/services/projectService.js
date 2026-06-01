@@ -1,19 +1,31 @@
 import pool from "../db/pool.js";
+import { AppError } from "../utils/AppError.js";
+import { parseRepoUrl } from "./githubService.js";
+
+// Dérive le nom du dépôt ("repo") depuis l'URL ; retourne l'URL si le parsing échoue.
+const safeRepoName = (repoUrl) => {
+    try {
+        return parseRepoUrl(repoUrl).repo;
+    } catch {
+        return repoUrl;
+    }
+};
 
 /**
- * Liste les projets d'un utilisateur.
+ * Liste les projets d'un utilisateur, avec le nom du dépôt et le nombre d'analyses.
  * @param {number} userId
  * @returns {Promise<object[]>}
  */
 export const listProjects = async (userId) => {
     const [rows] = await pool.query(
-        `SELECT pk_project AS id, fk_user AS user_id, github_repo_url, created_at
+        `SELECT pk_project AS id, fk_user AS user_id, github_repo_url, created_at,
+                (SELECT COUNT(*) FROM t_analysis WHERE fk_project = pk_project) AS analysis_count
          FROM t_project
          WHERE fk_user = ?
          ORDER BY created_at DESC`,
         [userId]
     );
-    return rows;
+    return rows.map((row) => ({ ...row, name: safeRepoName(row.github_repo_url) }));
 };
 
 /**
@@ -29,7 +41,8 @@ export const findProjectById = async (id, userId) => {
          WHERE pk_project = ? AND fk_user = ?`,
         [id, userId]
     );
-    return rows[0] ?? null;
+    if (!rows[0]) return null;
+    return { ...rows[0], name: safeRepoName(rows[0].github_repo_url) };
 };
 
 /**
@@ -41,12 +54,35 @@ export const findProjectById = async (id, userId) => {
 export const createProject = async (projectData, userId) => {
     const { github_repo_url } = projectData;
 
-    const [result] = await pool.query(
-        `INSERT INTO t_project (fk_user, github_repo_url) VALUES (?, ?)`,
-        [userId, github_repo_url]
-    );
+    try {
+        const [result] = await pool.query(
+            `INSERT INTO t_project (fk_user, github_repo_url) VALUES (?, ?)`,
+            [userId, github_repo_url]
+        );
 
-    return findProjectById(result.insertId, userId);
+        return findProjectById(result.insertId, userId);
+    } catch (err) {
+        // Violation de la contrainte uk_user_repo : le projet existe déjà.
+        if (err.code === "ER_DUP_ENTRY") {
+            throw new AppError("Projet déjà enregistré", 409);
+        }
+        throw err;
+    }
+};
+
+/**
+ * Indique si un projet a une analyse en cours (queued ou running).
+ * @param {number} projectId
+ * @returns {Promise<boolean>}
+ */
+export const hasActiveAnalysis = async (projectId) => {
+    const [rows] = await pool.query(
+        `SELECT 1 FROM t_analysis
+         WHERE fk_project = ? AND status IN ('queued', 'running')
+         LIMIT 1`,
+        [projectId]
+    );
+    return rows.length > 0;
 };
 
 /**

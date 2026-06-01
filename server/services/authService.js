@@ -1,5 +1,8 @@
+import axios from "axios";
 import pool from "../db/pool.js";
 import { OAuthApp } from "@octokit/oauth-app";
+import { encrypt, decrypt } from "../utils/crypto.js";
+import { AppError } from "../utils/AppError.js";
 
 const githubOAuthApp = new OAuthApp({
   clientType: "oauth-app",
@@ -17,7 +20,10 @@ export const getAuthorizationUrl = () => {
     scopes: ["read:user", "repo", "user"],
   });
 
-  return url;
+  // prompt=select_account force GitHub à réafficher l'écran de connexion /
+  // choix du compte, même si une session GitHub est déjà active. Sans ça, après
+  // une déconnexion de l'app, GitHub renverrait silencieusement le compte courant.
+  return `${url}&prompt=select_account`;
 };
 
 /**
@@ -37,18 +43,22 @@ export const exchangeCode = async (code) => {
  * @returns {Promise<object>}
  */
 export const fetchGitHubUser = async (token) => {
-  const response = await fetch("https://api.github.com/user", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
+  try {
+    const { data } = await axios.get("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      timeout: 30000,
+    });
+    return data;
+  } catch (error) {
+    // Token invalide ou révoqué : le client doit relancer la connexion GitHub.
+    if (error.response?.status === 401) {
+      throw new AppError("Reconnexion GitHub requise", 401);
+    }
+    throw new Error(`GitHub API error: ${error.response?.status ?? error.code}`);
   }
-
-  return response.json();
 };
 
 /**
@@ -59,11 +69,14 @@ export const fetchGitHubUser = async (token) => {
 export const createOrUpdateUser = async (user) => {
   const { github_id, access_token } = user;
 
+  // Le token est chiffré avant d'être persisté (jamais stocké en clair).
+  const encryptedToken = encrypt(access_token);
+
   await pool.query(
     `INSERT INTO t_user (github_id, access_token)
      VALUES (?,?)
      ON DUPLICATE KEY UPDATE access_token = VALUES(access_token)`,
-    [github_id, access_token],
+    [github_id, encryptedToken],
   );
 
   const [rows] = await pool.query(
@@ -86,4 +99,25 @@ export const findUserById = async (id) => {
   );
 
   return rows[0] ?? null;
+};
+
+/**
+ * Retourne le token GitHub déchiffré d'un utilisateur (pour les appels à l'API GitHub).
+ * @param {number} userId
+ * @returns {Promise<string|null>}
+ */
+export const getUserToken = async (userId) => {
+  const [rows] = await pool.query(
+    `SELECT access_token FROM t_user WHERE pk_user = ?`,
+    [userId]
+  );
+
+  if (!rows[0]) return null;
+
+  try {
+    return decrypt(rows[0].access_token);
+  } catch {
+    // Token illisible (clé de chiffrement changée / donnée corrompue) : reconnexion requise.
+    throw new AppError("Reconnexion GitHub requise", 401);
+  }
 };

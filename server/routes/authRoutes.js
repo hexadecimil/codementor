@@ -6,7 +6,7 @@ const router = Router();
 
 /**
  * @openapi
- * /api/auth/login:
+ * /auth/login:
  *   get:
  *     tags: [Auth]
  *     summary: Démarre la connexion OAuth GitHub
@@ -20,7 +20,7 @@ router.get("/login", authController.login);
 
 /**
  * @openapi
- * /api/auth/callback:
+ * /auth/callback:
  *   get:
  *     tags: [Auth]
  *     summary: Callback OAuth GitHub
@@ -43,29 +43,21 @@ router.get("/callback", authController.callback);
 
 /**
  * @openapi
- * /api/auth/logout:
+ * /auth/logout:
  *   post:
  *     tags: [Auth]
  *     summary: Déconnexion
  *     description: Détruit la session courante et supprime le cookie.
  *     security: []
  *     responses:
- *       200:
- *         description: Session détruite.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                   example: true
+ *       204:
+ *         description: Session détruite (pas de contenu).
  */
 router.post("/logout", authController.logout);
 
 /**
  * @openapi
- * /api/auth/me:
+ * /auth/me:
  *   get:
  *     tags: [Auth]
  *     summary: Utilisateur courant

@@ -22,7 +22,7 @@ USE codementor;
 CREATE TABLE t_user (
     pk_user       INT AUTO_INCREMENT PRIMARY KEY,
     github_id     INT UNSIGNED NOT NULL UNIQUE COMMENT 'ID GitHub immuable',
-    access_token  VARCHAR(255) NOT NULL        COMMENT 'Token OAuth (chiffré côté application)',
+    access_token  VARCHAR(255) NOT NULL        COMMENT 'Token OAuth chiffré côté application (AES-256-GCM)',
     created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB;
 

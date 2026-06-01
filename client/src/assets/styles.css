@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Thème CodeMentor (Tailwind v4 — config dans le CSS).
+   On n'enregistre QUE les couleurs principales reprises des maquettes ;
+   le reste se fait avec les utilitaires Tailwind standards.
+   ===================================================================== */
+@theme {
+  --color-primary: #4edea3; /* vert d'accent */
+  --color-background: #101419; /* fond principal */
+  --color-surface: #1c2025; /* cartes / panneaux */
+  --color-line: #3c4a42; /* bordures */
+  --color-ink: #e0e2ea; /* texte principal */
+  --color-muted: #bbcabf; /* texte secondaire */
+  --color-danger: #ffb4ab; /* erreurs */
+
+  --font-display: "Geist", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Icônes Material Symbols (police chargée dans index.html) */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.icon-fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Tailwind v4 met `cursor: default` sur les <button> par défaut. On rétablit le
+   curseur main sur les boutons cliquables (et le curseur interdit si désactivé). */
+button:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}

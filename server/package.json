@@ -24,7 +24,6 @@
         "mysql2": "^3.17.4",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
-        "tpi2026-codementor": "file:..",
         "xss": "^1.0.15"
     }
 }

@@ -3,10 +3,7 @@ import * as projectController from "../controllers/projectController.js";
 import * as analysisController from "../controllers/analysisController.js";
 import { requireAuth } from "../middlewares/authMiddleware.js";
 import { validator } from "../middlewares/validateMiddleware.js";
-import {
-    createProjectSchema,
-    projectIdParamSchema,
-} from "../validators/schemas.js";
+import { createProjectSchema, idParamSchema } from "../validators/schemas.js";
 
 const router = Router();
 
@@ -14,7 +11,7 @@ router.use(requireAuth);
 
 /**
  * @openapi
- * /api/projects:
+ * /projects:
  *   get:
  *     tags: [Projects]
  *     summary: Liste les projets de l'utilisateur connecté
@@ -36,10 +33,10 @@ router.get("/", projectController.list);
 
 /**
  * @openapi
- * /api/projects/{id}:
+ * /projects/{id}:
  *   get:
  *     tags: [Projects]
- *     summary: Récupère un projet par son id
+ *     summary: Récupère un projet, ses métadonnées GitHub et son historique d'analyses
  *     parameters:
  *       - in: path
  *         name: id
@@ -48,11 +45,11 @@ router.get("/", projectController.list);
  *           type: integer
  *     responses:
  *       200:
- *         description: Le projet demandé.
+ *         description: Le projet demandé avec ses métadonnées GitHub et ses analyses.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Project'
+ *               $ref: '#/components/schemas/ProjectDetail'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
@@ -62,11 +59,11 @@ router.get("/", projectController.list);
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get("/:id", validator.params(projectIdParamSchema), projectController.getById);
+router.get("/:id", validator.params(idParamSchema), projectController.getById);
 
 /**
  * @openapi
- * /api/projects:
+ * /projects:
  *   post:
  *     tags: [Projects]
  *     summary: Crée un projet à partir d'une URL de dépôt GitHub
@@ -94,7 +91,19 @@ router.get("/:id", validator.params(projectIdParamSchema), projectController.get
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Dépôt inaccessible ou inexistant.
+ *         description: Accès au dépôt refusé.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Dépôt introuvable.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Le projet existe déjà pour cet utilisateur.
  *         content:
  *           application/json:
  *             schema:
@@ -106,7 +115,7 @@ router.post("/", validator.body(createProjectSchema), projectController.create);
 
 /**
  * @openapi
- * /api/projects/{id}:
+ * /projects/{id}:
  *   delete:
  *     tags: [Projects]
  *     summary: Supprime un projet de l'utilisateur
@@ -125,14 +134,20 @@ router.post("/", validator.body(createProjectSchema), projectController.create);
  *         $ref: '#/components/responses/Unauthorized'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         description: Une analyse est en cours sur ce projet.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete("/:id", validator.params(projectIdParamSchema), projectController.remove);
+router.delete("/:id", validator.params(idParamSchema), projectController.remove);
 
 /**
  * @openapi
- * /api/projects/{id}/analyses:
+ * /projects/{id}/analyses:
  *   get:
  *     tags: [Projects]
  *     summary: Liste les analyses d'un projet (les plus récentes d'abord)
@@ -159,7 +174,33 @@ router.delete("/:id", validator.params(projectIdParamSchema), projectController.
  *         $ref: '#/components/responses/NotFound'
  *       500:
  *         $ref: '#/components/responses/ServerError'
+ *   post:
+ *     tags: [Projects]
+ *     summary: Démarre une analyse pour un projet
+ *     description: Crée une analyse en statut "queued", la place dans la file d'attente et répond immédiatement (202). Le traitement tourne en arrière-plan.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       202:
+ *         description: Analyse acceptée et mise en file.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Analysis'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
-router.get("/:id/analyses", validator.params(projectIdParamSchema), analysisController.list);
+router.get("/:id/analyses", validator.params(idParamSchema), analysisController.list);
+router.post("/:id/analyses", validator.params(idParamSchema), analysisController.start);
 
 export default router;

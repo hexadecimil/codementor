@@ -19,12 +19,12 @@ API REST de CodeMentor : analyse de dépôts GitHub assistée par IA.
 
 ## Authentification
 Les routes protégées nécessitent une session active.
-1. Initier la connexion via **GET /api/auth/login** (redirection OAuth GitHub).
+1. Initier la connexion via **GET /auth/login** (redirection OAuth GitHub).
 2. Le serveur stocke la session après le callback GitHub.
             `,
         },
         servers: [
-            { url: "http://localhost:3000/codementor", description: "Serveur local" },
+            { url: "http://localhost:3000/codementor/api", description: "Serveur local" },
         ],
         components: {
             securitySchemes: {
@@ -44,7 +44,7 @@ Les routes protégées nécessitent une session active.
                 ValidationError: {
                     type: "object",
                     properties: {
-                        message: { type: "string", example: "Données invalides." },
+                        error: { type: "string", example: "Données invalides." },
                         details: {
                             type: "array",
                             items: { type: "string" },
@@ -58,6 +58,9 @@ Les routes protégées nécessitent une session active.
                         id: { type: "integer", example: 1 },
                         github_id: { type: "integer", example: 1234567 },
                         created_at: { type: "string", format: "date-time" },
+                        login: { type: "string", nullable: true, example: "octocat", description: "Identifiant GitHub (live)." },
+                        name: { type: "string", nullable: true, example: "The Octocat", description: "Nom affiché GitHub (live)." },
+                        avatar_url: { type: "string", nullable: true, example: "https://avatars.githubusercontent.com/u/583231" },
                     },
                 },
                 Project: {
@@ -69,7 +72,37 @@ Les routes protégées nécessitent une session active.
                             type: "string",
                             example: "https://github.com/user/repo",
                         },
+                        name: { type: "string", example: "repo", description: "Nom du dépôt déduit de l'URL." },
+                        analysis_count: { type: "integer", example: 3, description: "Nombre d'analyses du projet." },
                         created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                GithubMeta: {
+                    type: "object",
+                    nullable: true,
+                    description: "Métadonnées GitHub en direct (null si le dépôt est inaccessible).",
+                    properties: {
+                        html_url: { type: "string", example: "https://github.com/user/repo" },
+                        visibility: { type: "string", example: "public" },
+                        stars: { type: "integer", example: 42 },
+                        language: { type: "string", nullable: true, example: "JavaScript" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                ProjectDetail: {
+                    type: "object",
+                    description: "Détail d'un projet : champs de base + métadonnées GitHub + historique d'analyses.",
+                    properties: {
+                        id: { type: "integer", example: 1 },
+                        user_id: { type: "integer", example: 1 },
+                        github_repo_url: { type: "string", example: "https://github.com/user/repo" },
+                        name: { type: "string", example: "repo" },
+                        created_at: { type: "string", format: "date-time" },
+                        github: { $ref: "#/components/schemas/GithubMeta" },
+                        analyses: {
+                            type: "array",
+                            items: { $ref: "#/components/schemas/AnalysisSummary" },
+                        },
                     },
                 },
                 DetectedError: {
@@ -136,6 +169,25 @@ Les routes protégées nécessitent une session active.
                         analysis_date: { type: "string", format: "date-time" },
                     },
                 },
+                AnalysisStatus: {
+                    type: "object",
+                    description: "Avancement léger d'une analyse, renvoyé lors du polling.",
+                    properties: {
+                        id: { type: "integer", example: 1 },
+                        project_id: { type: "integer", example: 1 },
+                        status: {
+                            type: "string",
+                            enum: ["queued", "running", "completed", "failed"],
+                        },
+                        files_total: { type: "integer", nullable: true, example: 12 },
+                        files_done: { type: "integer", example: 5 },
+                        progress_percent: {
+                            type: "integer",
+                            example: 42,
+                            description: "Avancement de 0 à 100 (100 si l'analyse est terminée).",
+                        },
+                    },
+                },
                 AnalysisFull: {
                     allOf: [
                         { $ref: "#/components/schemas/Analysis" },
@@ -153,7 +205,8 @@ Les routes protégées nécessitent une session active.
             },
             responses: {
                 Unauthorized: {
-                    description: "Non connecté (pas de session active).",
+                    description:
+                        "Non autorisé : pas de session active, ou token GitHub invalide/révoqué. Le client doit relancer la connexion via GET /auth/login.",
                     content: {
                         "application/json": { schema: { $ref: "#/components/schemas/Error" } },
                     },

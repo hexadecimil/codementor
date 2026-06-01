@@ -1,11 +1,34 @@
 import axios from "axios";
+import { getExtension } from "../utils/files.js";
+import { AppError } from "../utils/AppError.js";
 
-const httpClient = axios.create({ baseURL: "https://api.github.com" });
+const httpClient = axios.create({
+    baseURL: "https://api.github.com",
+    timeout: 30000,
+});
 
-const parseRepoUrl = (repoUrl) => {
-    const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+// Mappe les erreurs de l'API GitHub vers des codes HTTP clients.
+// 401 = token invalide/révoqué : le client doit relancer la connexion GitHub.
+httpClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+        if (status === 401) throw new AppError("Reconnexion GitHub requise", 401);
+        if (status === 403) throw new AppError("Accès au dépôt refusé", 403);
+        if (status === 404) throw new AppError("Dépôt introuvable", 404);
+        throw error;
+    }
+);
+
+// Taille maximale d'un fichier récupérable via l'API contents de GitHub (1 Mo).
+const MAX_FILE_SIZE = 1_000_000;
+
+export const parseRepoUrl = (repoUrl) => {
+    // Capture owner/repo ; le nom du dépôt peut contenir des points (ex. my.repo).
+    const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/#?]+)/);
     if (!match) throw new Error(`URL de dépôt invalide : ${repoUrl}`);
-    return { owner: match[1], repo: match[2] };
+    const repo = match[2].replace(/\.git$/, "");
+    return { owner: match[1], repo };
 };
 
 const authHeader = (token) => ({
@@ -16,10 +39,10 @@ const authHeader = (token) => ({
 });
 
 /**
- * Récupère l'arbre des fichiers d'un dépôt GitHub.
+ * Récupère l'arbre des fichiers d'un dépôt GitHub et le SHA du dernier commit.
  * @param {string} repoUrl
  * @param {string} token
- * @returns {Promise<object[]>}
+ * @returns {Promise<{tree: object[], commitSha: string}>}
  */
 export const fetchRepoTree = async (repoUrl, token) => {
     const { owner, repo } = parseRepoUrl(repoUrl);
@@ -29,16 +52,26 @@ export const fetchRepoTree = async (repoUrl, token) => {
         authHeader(token)
     );
 
+    const { data: branch } = await httpClient.get(
+        `/repos/${owner}/${repo}/branches/${repoInfo.default_branch}`,
+        authHeader(token)
+    );
+
     const { data: treeData } = await httpClient.get(
         `/repos/${owner}/${repo}/git/trees/${repoInfo.default_branch}?recursive=1`,
         authHeader(token)
     );
 
-    return treeData.tree;
+    // GitHub tronque l'arbre des très gros dépôts : on prévient sans bloquer.
+    if (treeData.truncated) {
+        console.warn(`Arbre tronqué pour ${repoUrl} : certains fichiers ne seront pas analysés.`);
+    }
+
+    return { tree: treeData.tree, commitSha: branch.commit.sha };
 };
 
 /**
- * Récupère le contenu (texte) d'un fichier d'un dépôt.
+ * Récupère le contenu texte d'un fichier d'un dépôt.
  * @param {string} repoUrl
  * @param {string} path
  * @param {string} token
@@ -52,26 +85,44 @@ export const fetchFileContent = async (repoUrl, path, token) => {
         authHeader(token)
     );
 
+    // L'API ne renvoie pas le contenu pour un binaire ou un fichier trop gros.
+    if (data.encoding !== "base64" || !data.content) {
+        throw new Error(`Contenu indisponible (binaire ou trop volumineux) : ${path}`);
+    }
+
     return Buffer.from(data.content, "base64").toString("utf-8");
 };
 
 /**
- * Vérifie que l'utilisateur a accès au dépôt avec son token.
+ * Vérifie que l'utilisateur a accès au dépôt ; lève une erreur sinon.
  * @param {string} repoUrl
  * @param {string} token
- * @returns {Promise<boolean>}
+ * @returns {Promise<void>}
+ * @throws {AppError} 401 reconnexion requise, 403 accès refusé, 404 introuvable (via l'intercepteur).
  */
-export const checkRepoAccess = async (repoUrl, token) => {
-    try {
-        const { owner, repo } = parseRepoUrl(repoUrl);
-        await httpClient.get(`/repos/${owner}/${repo}`, authHeader(token));
-        return true;
-    } catch (err) {
-        if (err.response?.status === 404 || err.response?.status === 403) {
-            return false;
-        }
-        throw err;
-    }
+export const ensureRepoAccess = async (repoUrl, token) => {
+    const { owner, repo } = parseRepoUrl(repoUrl);
+    await httpClient.get(`/repos/${owner}/${repo}`, authHeader(token));
+};
+
+/**
+ * Récupère les métadonnées d'un dépôt GitHub (nom, langage, visibilité, étoiles...).
+ * @param {string} repoUrl
+ * @param {string} token
+ * @returns {Promise<object>}
+ */
+export const fetchRepoMetadata = async (repoUrl, token) => {
+    const { owner, repo } = parseRepoUrl(repoUrl);
+
+    const { data } = await httpClient.get(`/repos/${owner}/${repo}`, authHeader(token));
+
+    return {
+        html_url: data.html_url,
+        visibility: data.visibility,
+        stars: data.stargazers_count,
+        language: data.language,
+        created_at: data.created_at,
+    };
 };
 
 const RELEVANT_EXTENSIONS = [
@@ -88,16 +139,16 @@ const EXCLUDED_PATHS = [
 ];
 
 /**
- * Filtre l'arbre pour ne retourner que les fichiers pertinents à analyser.
+ * Filtre l'arbre pour ne garder que les fichiers de code pertinents à analyser.
  * @param {object[]} tree
  * @returns {object[]}
  */
 export const filterRelevantFiles = (tree) => {
     return tree.filter((entry) => {
         if (entry.type !== "blob") return false;
+        if (entry.size > MAX_FILE_SIZE) return false;
         if (EXCLUDED_PATHS.some((excluded) => entry.path.includes(excluded))) return false;
 
-        const extension = entry.path.split(".").pop().toLowerCase();
-        return RELEVANT_EXTENSIONS.includes(extension);
+        return RELEVANT_EXTENSIONS.includes(getExtension(entry.path));
     });
 };
