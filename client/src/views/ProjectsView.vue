@@ -17,7 +17,7 @@ const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();
   if (!q) return projects.value;
   return projects.value.filter((p) =>
-    repoFullName(p.github_repo_url, p.name).toLowerCase().includes(q),
+    repoFullName(p.github_repo_url).toLowerCase().includes(q),
   );
 });
 
@@ -83,9 +83,9 @@ onMounted(loadProjects);
           </div>
           <h3
             class="text-base font-bold text-ink truncate"
-            :title="repoFullName(project.github_repo_url, project.name)"
+            :title="repoFullName(project.github_repo_url)"
           >
-            {{ repoFullName(project.github_repo_url, project.name) }}
+            {{ repoFullName(project.github_repo_url) }}
           </h3>
         </div>
 

@@ -26,9 +26,9 @@ export function relativeDate(value) {
 
 // Nom complet d'un dépôt « pseudo/repo » extrait de son URL GitHub.
 // Le backend ne renvoie que le nom du repo ; on récupère le propriétaire depuis l'URL.
-export function repoFullName(url, fallback = "") {
+export function repoFullName(url) {
   const match = (url || "").match(/github\.com[/:]([^/]+)\/([^/#?]+)/);
-  if (!match) return fallback;
+  if (!match) return url || "";
   return `${match[1]}/${match[2].replace(/\.git$/, "")}`;
 }
 
