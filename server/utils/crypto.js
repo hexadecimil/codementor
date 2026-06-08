@@ -7,11 +7,11 @@ const IV_LENGTH = 12;
 
 // Récupère la clé de chiffrement depuis l'environnement (64 caractères hexadécimaux).
 const getKey = () => {
-    const key = process.env.TOKEN_ENC_KEY;
-    if (!key || key.length !== 64) {
-        throw new Error("TOKEN_ENC_KEY manquante ou invalide (64 caractères hexadécimaux attendus).");
-    }
-    return Buffer.from(key, "hex");
+  const key = process.env.TOKEN_ENC_KEY;
+  if (!key || key.length !== 64) {
+    throw new Error("TOKEN_ENC_KEY manquante ou invalide (64 caractères hexadécimaux attendus).");
+  }
+  return Buffer.from(key, "hex");
 };
 
 /**
@@ -21,11 +21,11 @@ const getKey = () => {
  * @returns {string}
  */
 export const encrypt = (plainText) => {
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, getKey(), iv);
-    const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
-    const tag = cipher.getAuthTag();
-    return `${iv.toString("base64")}:${tag.toString("base64")}:${encrypted.toString("base64")}`;
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, getKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${iv.toString("base64")}:${tag.toString("base64")}:${encrypted.toString("base64")}`;
 };
 
 /**
@@ -34,15 +34,12 @@ export const encrypt = (plainText) => {
  * @returns {string}
  */
 export const decrypt = (payload) => {
-    const [ivB64, tagB64, dataB64] = (payload ?? "").split(":");
-    if (!ivB64 || !tagB64 || !dataB64) {
-        throw new Error("Donnée chiffrée invalide (format attendu iv:tag:ciphertext).");
-    }
-    const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivB64, "base64"));
-    decipher.setAuthTag(Buffer.from(tagB64, "base64"));
-    const decrypted = Buffer.concat([
-        decipher.update(Buffer.from(dataB64, "base64")),
-        decipher.final(),
-    ]);
-    return decrypted.toString("utf8");
+  const [ivB64, tagB64, dataB64] = (payload ?? "").split(":");
+  if (!ivB64 || !tagB64 || !dataB64) {
+    throw new Error("Donnée chiffrée invalide (format attendu iv:tag:ciphertext).");
+  }
+  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivB64, "base64"));
+  decipher.setAuthTag(Buffer.from(tagB64, "base64"));
+  const decrypted = Buffer.concat([decipher.update(Buffer.from(dataB64, "base64")), decipher.final()]);
+  return decrypted.toString("utf8");
 };

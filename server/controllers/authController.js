@@ -7,6 +7,7 @@ import {
   getUserToken,
 } from "../services/authService.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { AppError } from "../utils/AppError.js";
 
 /**
  * Redirige l'utilisateur vers la page d'autorisation GitHub OAuth.
@@ -26,6 +27,9 @@ export const login = asyncHandler(async (req, res) => {
  */
 export const callback = asyncHandler(async (req, res) => {
   const { code } = req.query;
+  if (!code) {
+    throw new AppError("Code d'autorisation manquant", 400);
+  }
   const token = await exchangeCode(code);
 
   const githubUser = await fetchGitHubUser(token);
@@ -38,7 +42,8 @@ export const callback = asyncHandler(async (req, res) => {
   // Seul l'id utilisateur est gardé en session ; le token reste chiffré en BDD.
   req.session.userId = dbUser.id;
 
-  res.redirect("http://localhost:5173/dashboard");
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  res.redirect(`${frontendUrl}/dashboard`);
 });
 
 /**
@@ -65,11 +70,11 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await findUserById(req.session.userId);
 
   if (!user) {
-    return res.status(404).json({ error: "Utilisateur introuvable" });
+    throw new AppError("Utilisateur introuvable", 404);
   }
 
-  // Profil GitHub en direct. Un token invalide (401) est propagé pour forcer
-  // la reconnexion côté client.
+  // Profil GitHub récupéré en direct. On ne capture pas l'erreur ici : si le token
+  // est invalide, le 401 remonte au client, qui déclenche alors la reconnexion.
   const token = await getUserToken(req.session.userId);
   const githubProfile = await fetchGitHubUser(token);
 

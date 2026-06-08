@@ -8,14 +8,16 @@ import ProjectDetailView from "@/views/ProjectDetailView.vue";
 import AnalysisView from "@/views/AnalysisView.vue";
 
 const routes = [
-  { path: "/login", name: "login", component: LoginView, meta: { public: true } },
+  { path: "/login", name: "login", component: LoginView, meta: { public: true, title: "Connexion" } },
   { path: "/", redirect: "/projects" },
   // Le backend redirige vers /dashboard après l'OAuth : on le renvoie vers les projets.
   { path: "/dashboard", redirect: "/projects" },
-  { path: "/projects", name: "projects", component: ProjectsView },
-  { path: "/projects/new", name: "project-new", component: AddProjectView },
-  { path: "/projects/:id", name: "project-detail", component: ProjectDetailView },
-  { path: "/analyses/:id", name: "analysis", component: AnalysisView },
+  { path: "/projects", name: "projects", component: ProjectsView, meta: { title: "Mes projets" } },
+  { path: "/projects/new", name: "project-new", component: AddProjectView, meta: { title: "Nouveau projet" } },
+  { path: "/projects/:id", name: "project-detail", component: ProjectDetailView, meta: { title: "Projet" } },
+  { path: "/analyses/:id", name: "analysis", component: AnalysisView, meta: { title: "Analyse" } },
+  // Toute URL inconnue est renvoyée vers les projets (évite une page blanche).
+  { path: "/:pathMatch(.*)*", redirect: "/projects" },
 ];
 
 const router = createRouter({
@@ -43,6 +45,11 @@ router.beforeEach(async (to) => {
   }
 
   return true;
+});
+
+// Met à jour le titre de l'onglet selon la page courante.
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} · CodeMentor` : "CodeMentor";
 });
 
 export default router;

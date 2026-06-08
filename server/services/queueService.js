@@ -9,12 +9,12 @@ let activeWorkers = 0;
  * @param {() => Promise<void>} job  Fonction async à exécuter (ex: () => run(analysisId))
  */
 export const enqueue = (job) => {
-    queue.push(job);
+  queue.push(job);
 
-    if (activeWorkers < MAX_CONCURRENT) {
-        activeWorkers++;
-        worker();
-    }
+  if (activeWorkers < MAX_CONCURRENT) {
+    activeWorkers++;
+    worker();
+  }
 };
 
 /**
@@ -23,13 +23,13 @@ export const enqueue = (job) => {
  * @returns {Promise<void>}
  */
 const worker = async () => {
-    while (queue.length > 0) {
-        const job = queue.shift();
-        try {
-            await job();
-        } catch (err) {
-            console.error("Échec d'un job de la file d'analyse :", err);
-        }
+  while (queue.length > 0) {
+    const job = queue.shift();
+    try {
+      await job();
+    } catch (err) {
+      console.error("Échec d'un job de la file d'analyse :", err);
     }
-    activeWorkers--;
+  }
+  activeWorkers--;
 };

@@ -1,7 +1,7 @@
 <script setup>
 // État réutilisable : chargement, vide ou erreur.
 defineProps({
-  type: { type: String, default: "info" }, // "loading" | "empty" | "error"
+  type: { type: String, default: "empty" }, // "loading" | "empty" | "error"
   message: { type: String, default: "" },
 });
 </script>

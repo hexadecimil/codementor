@@ -1,93 +1,182 @@
-# tpi2026-codementor
+# CodeMentor
 
+CodeMentor est une application web d'analyse de code assistée par IA, réalisée dans le cadre du
+Travail Pratique Individuel (TPI 2026) de Thibaud Gamez.
 
+Après connexion via GitHub, l'utilisateur ajoute un projet lié à un dépôt GitHub et lance une
+analyse. L'application parcourt le code, génère une explication de chaque fichier, détecte des
+erreurs potentielles avec une correction suggérée, et produit un diagramme Mermaid de la structure
+du projet.
 
-## Getting started
+> La documentation complète du projet (analyse, conception, tests, etc.) se trouve dans le **rapport
+> de TPI** (`doc/GAMEZ_rapport_TPI.docx`). Ce README constitue la **documentation d'utilisation** du
+> projet : il explique comment installer, configurer et utiliser les deux applications (l'interface
+> web et l'API backend).
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Architecture
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.emf-infopro.ch/EMF-Informatique/tpi/tpi2026-codementor.git
-git branch -M main
-git push -uf origin main
+tpi2026-codementor/
+├── server/            Backend Node.js / Express (API REST, OAuth GitHub, file d'analyse, OpenRouter)
+├── client/            Frontend Vue 3 + Vite + Pinia + Tailwind
+├── mysql/script.sql   Schéma de la base de données MySQL
+└── docker-compose.yml MySQL + phpMyAdmin pour le développement local
 ```
 
-## Integrate with your tools
+## Prérequis
 
-* [Set up project integrations](https://gitlab.emf-infopro.ch/EMF-Informatique/tpi/tpi2026-codementor/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- [Node.js](https://nodejs.org/) 20 ou plus récent
+- [Docker](https://www.docker.com/) (pour la base de données)
+- Un compte GitHub et un compte [OpenRouter](https://openrouter.ai/)
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 1. Base de données (Docker)
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Depuis la racine du projet, lancer la base et phpMyAdmin :
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```bash
+docker compose up -d
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Cela démarre un conteneur **MySQL** (port 3306) et **phpMyAdmin** (http://localhost:8080).
+Le schéma `mysql/script.sql` est exécuté automatiquement au premier démarrage : toutes les tables
+sont créées sans action supplémentaire.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+> Le volume de données pointe vers `C:/docker-data/codementor-mysql` dans `docker-compose.yml`.
+> Sous Windows, créer ce dossier avant le premier lancement (`mkdir C:\docker-data\codementor-mysql`).
+> Sur une autre plateforme ou pour un environnement portable, remplacer ce chemin par un volume
+> Docker nommé (`mysql-data:/var/lib/mysql`, déclaré dans une section `volumes:` du fichier).
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### 2. Backend
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+cd server
+copy .env.example .env      # Windows  (Linux/macOS : cp .env.example .env)
+# remplir les valeurs du .env (voir le tableau ci-dessous)
+npm install
+npm start
+```
 
-## License
-For open source projects, say how it is licensed.
+L'API est alors disponible sur http://localhost:3000/codementor/api et la documentation
+interactive Swagger sur **http://localhost:3000/codementor/api-docs**.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### 3. Frontend
+
+```bash
+cd client
+copy .env.example .env      # Windows  (Linux/macOS : cp .env.example .env)
+npm install
+npm run dev
+```
+
+Le fichier `client/.env` définit `VITE_API_URL`, l'URL de base de l'API backend (valeur par défaut
+`http://localhost:3000/codementor/api`, qui convient pour l'installation locale). Si la variable
+n'est pas renseignée, l'application retombe automatiquement sur cette même valeur.
+
+L'interface est servie sur **http://localhost:5173**.
+
+> **Démarrage complet.** Les trois services doivent tourner en même temps : 1) la base de données
+> (`docker compose up -d`), 2) le backend (`npm start` dans `server/`), 3) le frontend
+> (`npm run dev` dans `client/`). L'OAuth App GitHub (voir ci-dessous) doit être créée avant la
+> première connexion.
+
+## Configuration du `.env` (backend)
+
+Toutes les variables sont à renseigner dans `server/.env` (copié depuis `server/.env.example`).
+
+| Variable | Rôle | Comment l'obtenir |
+|---|---|---|
+| `PORT` | Port d'écoute du backend | `3000` (valeur par défaut) |
+| `FRONTEND_URL` | URL du frontend (origine CORS autorisée et redirection après login) | `http://localhost:5173` |
+| `DB_HOST` / `DB_PORT` | Hôte et port MySQL | `localhost` / `3306` (cf. `docker-compose.yml`) |
+| `DB_USER` / `DB_PASSWORD` | Compte applicatif MySQL | `emf` / `emf123` (définis dans `docker-compose.yml`) |
+| `DB_NAME` | Nom de la base | `codementor` |
+| `SESSION_SECRET` | Clé de signature du cookie de session | Chaîne aléatoire : `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `TOKEN_ENC_KEY` | Clé de chiffrement AES-256-GCM du token GitHub (64 caractères hexadécimaux) | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `GITHUB_CLIENT_ID` | Identifiant de l'OAuth App GitHub | Voir « Créer l'OAuth App GitHub » ci-dessous |
+| `GITHUB_CLIENT_SECRET` | Secret de l'OAuth App GitHub | Idem |
+| `GITHUB_CALLBACK_URL` | URL de callback OAuth | `http://localhost:3000/codementor/api/auth/callback` |
+| `OPENROUTER_API_KEY` | Clé de l'API OpenRouter (appels LLM) | https://openrouter.ai/keys |
+| `OPENROUTER_MODEL` | Modèle LLM utilisé | `google/gemini-3.5-flash` (modèle retenu ; défaut du code si la variable est vide : `anthropic/claude-3.5-sonnet`) |
+| `AI_THINKING` | Mode de raisonnement du LLM | `true` = raisonnement libre ; vide/`false` = effort minimal (moins cher) |
+| `ANALYSIS_CONCURRENCY` | Nombre d'analyses traitées en parallèle par la file | Défaut `1` |
+| `FILE_CONCURRENCY` | Nombre de fichiers analysés en parallèle par analyse | Défaut `5` |
+
+### Créer l'OAuth App GitHub
+
+1. Aller sur https://github.com/settings/developers → **New OAuth App**.
+2. **Homepage URL** : `http://localhost:5173`
+3. **Authorization callback URL** : `http://localhost:3000/codementor/api/auth/callback`
+   (doit correspondre exactement à `GITHUB_CALLBACK_URL`).
+4. Reporter le **Client ID** et le **Client secret** générés dans `GITHUB_CLIENT_ID` et
+   `GITHUB_CLIENT_SECRET`.
+
+## URLs utiles
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| API backend | http://localhost:3000/codementor/api |
+| Documentation Swagger | http://localhost:3000/codementor/api-docs |
+| phpMyAdmin | http://localhost:8080 |
+
+## Utilisation
+
+CodeMentor se compose de deux applications, l'interface web (frontend) utilisée par la personne et
+l'API REST (backend) consommée par cette interface. Les écrans correspondants sont illustrés dans le
+rapport de TPI (chapitre « Maquette Web » et « Réalisation »).
+
+### Application web (interface utilisateur)
+
+Une fois le backend et le frontend démarrés, ouvrir http://localhost:5173.
+
+1. **Se connecter.** Sur la page d'accueil, cliquer sur « Continuer avec GitHub », puis autoriser
+   l'application sur GitHub. Après autorisation, la redirection vers la liste des projets est
+   automatique. Aucun mot de passe n'est demandé ni stocké, l'identification passe entièrement par
+   GitHub.
+2. **Ajouter un projet.** Cliquer sur « Nouveau projet », coller l'URL d'un dépôt GitHub auquel le
+   compte a accès, au format `https://github.com/utilisateur/depot`, puis valider avec « Ajouter le
+   projet ». Le dépôt doit exister et être accessible, sinon un message d'erreur précise la cause
+   (dépôt introuvable, accès refusé ou projet déjà ajouté).
+3. **Parcourir ses projets.** La page « Mes projets » affiche chaque dépôt sous forme de carte (nom
+   du dépôt, nombre d'analyses et date d'ajout). La barre de recherche en haut filtre les projets par
+   nom. Cliquer sur une carte ouvre la page de détail du projet, qui affiche ses métadonnées GitHub
+   (langage, visibilité, date) et l'historique de ses analyses.
+4. **Lancer une analyse.** Ouvrir un projet en cliquant sur sa carte, puis cliquer sur « Lancer une
+   analyse ». Le traitement démarre en arrière-plan, l'interface n'est pas bloquée.
+5. **Suivre la progression.** Un écran d'avancement affiche une barre de progression mise à jour
+   automatiquement (toutes les deux secondes) jusqu'à 100 %.
+6. **Consulter les résultats.** À la fin de l'analyse, la page présente, de haut en bas, le diagramme
+   Mermaid de la structure du projet, une vue d'ensemble du dépôt, puis la liste des erreurs
+   détectées. Chaque erreur est dépliable et indique sa sévérité (Élevée, Moyenne ou Faible), un
+   extrait du code concerné et la correction suggérée par l'IA.
+7. **Relancer une analyse.** Le bouton « Relancer » en haut de la page de résultats lance une
+   nouvelle analyse du même dépôt, par exemple après une mise à jour du code.
+8. **Supprimer un projet.** Depuis la page d'un projet, la suppression retire le projet et tout son
+   historique d'analyses. Elle est refusée tant qu'une analyse est en cours sur ce projet.
+9. **Se déconnecter.** Le menu latéral propose « Déconnexion », qui ferme la session et ramène à la
+   page de connexion.
+
+### API backend (via Swagger)
+
+La seconde application est l'API REST. Elle se découvre et se teste via sa documentation interactive
+Swagger, sur http://localhost:3000/codementor/api-docs.
+
+- Les routes du groupe `auth` (connexion) sont publiques. **Toutes les autres routes exigent une
+  session active** et renvoient un code `401` sinon. Pour ouvrir une session, **se connecter d'abord
+  depuis l'interface web** (http://localhost:5173) dans le même navigateur : le cookie de session est
+  ensuite réutilisé automatiquement par Swagger. `GET /auth/login` est une redirection vers GitHub à
+  ouvrir dans le navigateur, pas un appel testable tel quel depuis « Try it out ».
+- Principaux endpoints, regroupés par ressource :
+  - **Authentification :** `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`,
+    `GET /auth/me`.
+  - **Projets :** `GET /projects`, `POST /projects`, `GET /projects/:id`, `DELETE /projects/:id`.
+  - **Analyses :** `POST /projects/:id/analyses` (lancer), `GET /analyses/:id` (résultat complet),
+    `GET /analyses/:id/status` (progression).
+- Chaque endpoint est documenté dans Swagger avec ses paramètres, ses codes de réponse et un exemple.
+  Le bouton « Try it out » permet de l'exécuter directement depuis le navigateur.
+
+> Les adresses ci-dessus correspondent à l'installation locale par défaut. Tous les endpoints sont
+> relatifs à la base `/codementor/api` (par exemple `GET /projects` correspond à
+> `http://localhost:3000/codementor/api/projects`).

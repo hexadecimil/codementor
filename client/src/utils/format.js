@@ -24,12 +24,23 @@ export function relativeDate(value) {
   return `il y a ${Math.floor(months / 12)} an(s)`;
 }
 
+// Extrait { owner, repo } d'une URL de dépôt GitHub, ou null si l'URL n'en est pas une.
+// Source unique utilisée à la fois pour valider la saisie et pour l'affichage.
+// L'hôte doit être github.com (empêche une URL usurpée comme evil.com/github.com/...),
+// et l'URL doit contenir au moins « propriétaire/dépôt ».
+export function parseGithubRepo(url) {
+  const match = (url || "")
+    .trim()
+    .match(/^https?:\/\/(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/?#].*)?$/i);
+  if (!match) return null;
+  return { owner: match[1], repo: match[2] };
+}
+
 // Nom complet d'un dépôt « pseudo/repo » extrait de son URL GitHub.
 // Le backend ne renvoie que le nom du repo ; on récupère le propriétaire depuis l'URL.
 export function repoFullName(url) {
-  const match = (url || "").match(/github\.com[/:]([^/]+)\/([^/#?]+)/);
-  if (!match) return url || "";
-  return `${match[1]}/${match[2].replace(/\.git$/, "")}`;
+  const repo = parseGithubRepo(url);
+  return repo ? `${repo.owner}/${repo.repo}` : url || "";
 }
 
 // Identifiant d'analyse au format des maquettes (ex: #ANL-042).
@@ -45,17 +56,19 @@ const STATUS = {
   failed: { label: "Échec", badge: "bg-danger/10 text-danger border border-danger/20", dot: "bg-danger" },
 };
 
+// Libellé + classes de couleur (badge, point) d'un statut ; valeur neutre si inconnu.
 export function statusInfo(status) {
   return STATUS[status] || { label: status, badge: "bg-white/5 text-muted border border-line", dot: "bg-muted" };
 }
 
 // --- Sévérités d'erreur : libellé + couleurs ---
 const SEVERITY = {
-  high: { label: "High", icon: "error", iconColor: "text-danger", badge: "bg-danger/10 text-danger border border-danger/20", border: "border-danger/30" },
-  medium: { label: "Medium", icon: "warning", iconColor: "text-amber-400", badge: "bg-amber-400/10 text-amber-400 border border-amber-400/20", border: "border-line" },
-  low: { label: "Low", icon: "info", iconColor: "text-primary", badge: "bg-primary/10 text-primary border border-primary/20", border: "border-line" },
+  high: { label: "Élevée", icon: "error", iconColor: "text-danger", badge: "bg-danger/10 text-danger border border-danger/20", border: "border-danger/30" },
+  medium: { label: "Moyenne", icon: "warning", iconColor: "text-amber-400", badge: "bg-amber-400/10 text-amber-400 border border-amber-400/20", border: "border-line" },
+  low: { label: "Faible", icon: "info", iconColor: "text-primary", badge: "bg-primary/10 text-primary border border-primary/20", border: "border-line" },
 };
 
+// Libellé + icône + classes de couleur d'une sévérité ; « moyenne » par défaut si inconnue.
 export function severityInfo(severity) {
   return SEVERITY[severity] || SEVERITY.medium;
 }

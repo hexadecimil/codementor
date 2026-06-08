@@ -148,32 +148,6 @@ router.delete("/:id", validator.params(idParamSchema), projectController.remove)
 /**
  * @openapi
  * /projects/{id}/analyses:
- *   get:
- *     tags: [Projects]
- *     summary: Liste les analyses d'un projet (les plus récentes d'abord)
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Historique des analyses du projet.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/AnalysisSummary'
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
- *       500:
- *         $ref: '#/components/responses/ServerError'
  *   post:
  *     tags: [Projects]
  *     summary: Démarre une analyse pour un projet
@@ -200,7 +174,6 @@ router.delete("/:id", validator.params(idParamSchema), projectController.remove)
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get("/:id/analyses", validator.params(idParamSchema), analysisController.list);
 router.post("/:id/analyses", validator.params(idParamSchema), analysisController.start);
 
 export default router;

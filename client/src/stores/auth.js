@@ -29,13 +29,19 @@ export const useAuthStore = defineStore("auth", {
 
     // Démarre la connexion OAuth GitHub. Il faut une vraie navigation du navigateur
     // (pas un fetch) car le backend renvoie une redirection vers GitHub.
+    // On réutilise la même base d'URL que l'API (variable d'env unique).
     login() {
-      window.location.href = "http://localhost:3000/codementor/api/auth/login";
+      window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:3000/codementor/api"}/auth/login`;
     },
 
+    // On vide toujours l'état local, même si l'appel échoue (réseau, 500), pour ne
+    // jamais laisser l'utilisateur « connecté » côté interface après une déconnexion.
     async logout() {
-      await api.post("/auth/logout");
-      this.user = null;
+      try {
+        await api.post("/auth/logout");
+      } finally {
+        this.user = null;
+      }
     },
   },
 });

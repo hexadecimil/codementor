@@ -8,7 +8,7 @@ const githubOAuthApp = new OAuthApp({
   clientType: "oauth-app",
   clientId: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  redirectUrl: "http://localhost:3000/codementor/api/auth/callback",
+  redirectUrl: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/codementor/api/auth/callback",
 });
 
 /**
@@ -17,7 +17,12 @@ const githubOAuthApp = new OAuthApp({
  */
 export const getAuthorizationUrl = () => {
   const { url } = githubOAuthApp.getWebFlowAuthorizationUrl({
-    scopes: ["read:user", "repo", "user"],
+    // Portées réduites au strict nécessaire (l'application ne fait QUE lire) :
+    // - read:user : lecture du profil (login, nom, avatar), sans écriture.
+    // - repo : lecture du contenu des dépôts, y compris PRIVÉS. L'OAuth classique
+    //   GitHub n'offre pas de portée lecture-seule pour le privé, donc "repo" (qui
+    //   inclut l'écriture) est le minimum ; un vrai read-only exigerait une GitHub App.
+    scopes: ["read:user", "repo"],
   });
 
   // prompt=select_account force GitHub à réafficher l'écran de connexion /
@@ -79,10 +84,9 @@ export const createOrUpdateUser = async (user) => {
     [github_id, encryptedToken],
   );
 
-  const [rows] = await pool.query(
-    "SELECT pk_user AS id, github_id, access_token, created_at FROM t_user WHERE github_id = ?",
-    [github_id],
-  );
+  const [rows] = await pool.query("SELECT pk_user AS id, github_id, created_at FROM t_user WHERE github_id = ?", [
+    github_id,
+  ]);
 
   return rows[0] ?? null;
 };
@@ -93,10 +97,7 @@ export const createOrUpdateUser = async (user) => {
  * @returns {Promise<object|null>}
  */
 export const findUserById = async (id) => {
-  const [rows] = await pool.query(
-    `SELECT pk_user AS id, github_id, access_token, created_at FROM t_user WHERE pk_user = ?`,
-    [id]
-  );
+  const [rows] = await pool.query(`SELECT pk_user AS id, github_id, created_at FROM t_user WHERE pk_user = ?`, [id]);
 
   return rows[0] ?? null;
 };
@@ -107,10 +108,7 @@ export const findUserById = async (id) => {
  * @returns {Promise<string|null>}
  */
 export const getUserToken = async (userId) => {
-  const [rows] = await pool.query(
-    `SELECT access_token FROM t_user WHERE pk_user = ?`,
-    [userId]
-  );
+  const [rows] = await pool.query(`SELECT access_token FROM t_user WHERE pk_user = ?`, [userId]);
 
   if (!rows[0]) return null;
 

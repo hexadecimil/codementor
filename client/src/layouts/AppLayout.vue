@@ -1,5 +1,6 @@
 <script setup>
 import SidebarNav from "@/components/SidebarNav.vue";
+import MobileTopBar from "@/components/MobileTopBar.vue";
 
 // breadcrumb : tableau d'éléments { label, to? }. Le dernier = page courante.
 defineProps({
@@ -12,8 +13,11 @@ defineProps({
     <SidebarNav />
 
     <div class="flex-1 flex flex-col min-h-screen md:ml-[240px] min-w-0">
-      <!-- Barre du haut : fil d'Ariane -->
-      <header class="sticky top-0 z-40 h-14 w-full bg-surface/80 backdrop-blur-md border-b border-line flex items-center px-6">
+      <!-- Barre mobile : remplace la sidebar masquée sous md (logo + déconnexion) -->
+      <MobileTopBar />
+
+      <!-- Barre du haut : fil d'Ariane (se cale sous la barre mobile sur petit écran) -->
+      <header class="sticky top-14 md:top-0 z-40 h-14 w-full bg-surface/80 backdrop-blur-md border-b border-line flex items-center px-6">
         <nav class="flex items-center gap-2 min-w-0 font-mono text-sm">
           <template v-for="(item, index) in breadcrumb" :key="index">
             <span v-if="index > 0" class="text-line">/</span>

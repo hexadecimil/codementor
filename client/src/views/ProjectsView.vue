@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import api from "@/services/api";
 import AppLayout from "@/layouts/AppLayout.vue";
 import StateMessage from "@/components/StateMessage.vue";
+import BaseButton from "@/components/BaseButton.vue";
 import { relativeDate, repoFullName } from "@/utils/format";
 
 const router = useRouter();
@@ -16,8 +17,8 @@ const search = ref("");
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();
   if (!q) return projects.value;
-  return projects.value.filter((p) =>
-    repoFullName(p.github_repo_url).toLowerCase().includes(q),
+  return projects.value.filter((project) =>
+    repoFullName(project.github_repo_url).toLowerCase().includes(q),
   );
 });
 
@@ -38,10 +39,10 @@ onMounted(loadProjects);
 </script>
 
 <template>
-  <AppLayout :breadcrumb="[{ label: 'Projects' }]">
+  <AppLayout :breadcrumb="[{ label: 'Projets' }]">
     <!-- En-tête -->
     <div class="mb-8">
-      <h2 class="text-2xl md:text-3xl font-bold text-ink tracking-tight mb-2">Mes projets</h2>
+      <h1 class="text-2xl md:text-3xl font-bold text-ink tracking-tight mb-2">Mes projets</h1>
       <p class="text-sm text-muted">Vos dépôts GitHub analysés</p>
     </div>
 
@@ -54,15 +55,13 @@ onMounted(loadProjects);
           class="w-full bg-background border border-line text-ink text-sm rounded pl-10 pr-4 py-2 focus:outline-none focus:border-primary transition-colors placeholder:text-muted/50"
           placeholder="Rechercher..."
           type="text"
+          aria-label="Rechercher un projet"
         />
       </div>
-      <RouterLink
-        to="/projects/new"
-        class="shrink-0 bg-primary text-background font-bold py-2 px-4 rounded hover:bg-[#157a4f] hover:text-white hover:scale-[1.03] transition-all flex items-center gap-2 h-10"
-      >
+      <BaseButton to="/projects/new" class="shrink-0">
         <span class="material-symbols-outlined text-[20px]">add</span>
-        <span class="text-sm">Nouveau projet</span>
-      </RouterLink>
+        <span>Nouveau projet</span>
+      </BaseButton>
     </div>
 
     <StateMessage v-if="loading" type="loading" message="Chargement des projets…" />

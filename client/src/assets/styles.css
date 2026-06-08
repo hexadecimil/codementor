@@ -7,6 +7,7 @@
    ===================================================================== */
 @theme {
   --color-primary: #4edea3; /* vert d'accent */
+  --color-primary-hover: #157a4f; /* vert d'accent au survol (boutons) */
   --color-background: #101419; /* fond principal */
   --color-surface: #1c2025; /* cartes / panneaux */
   --color-line: #3c4a42; /* bordures */

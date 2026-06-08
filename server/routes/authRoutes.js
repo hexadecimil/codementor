@@ -36,6 +36,12 @@ router.get("/login", authController.login);
  *     responses:
  *       302:
  *         description: Redirection vers le frontend après ouverture de session.
+ *       400:
+ *         description: Code d'autorisation manquant.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */

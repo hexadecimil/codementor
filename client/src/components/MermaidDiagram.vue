@@ -16,6 +16,9 @@ const failed = ref(false);
 mermaid.initialize({
   startOnLoad: false,
   theme: "dark",
+  // Le code Mermaid provient de l'IA (source non fiable) : le niveau « strict »
+  // fait passer le SVG dans DOMPurify et neutralise toute injection HTML.
+  securityLevel: "strict",
   maxEdges: 2000,
   maxTextSize: 200000,
 });
@@ -35,14 +38,20 @@ async function render() {
   destroyPanZoom();
   if (!props.code || !container.value) return;
 
+  const myId = (renderId += 1);
   try {
-    renderId += 1;
-    const { svg } = await mermaid.render(`mermaid-${renderId}`, props.code);
+    const { svg } = await mermaid.render(`mermaid-${myId}`, props.code);
+    // Un rendu plus récent a démarré pendant l'attente : on abandonne celui-ci
+    // (« dernier gagné ») pour ne pas écraser le diagramme courant.
+    if (myId !== renderId || !container.value) return;
     container.value.innerHTML = svg;
 
     // Rend le SVG navigable (zoom molette + déplacement à la souris).
     const svgEl = container.value.querySelector("svg");
     if (svgEl) {
+      // Libellé accessible : le diagramme représente la structure du projet.
+      svgEl.setAttribute("role", "img");
+      svgEl.setAttribute("aria-label", "Diagramme de structure du projet");
       // Mermaid ajoute un "max-width" en ligne qui empêche le SVG de remplir le
       // conteneur (d'où une bande de fond visible à droite). On le retire.
       svgEl.style.maxWidth = "none";

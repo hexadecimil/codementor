@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const httpClient = axios.create({
-    baseURL: "https://openrouter.ai/api/v1",
-    timeout: 120000,
+  baseURL: "https://openrouter.ai/api/v1",
+  timeout: 120000,
 });
 
 const MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
@@ -69,10 +69,10 @@ Contraintes :
 - Les lignes te sont fournies préfixées de "<numéro>│" pour repérer line_number ; ce préfixe ne fait PAS partie du code.`;
 
 const numberLines = (content) => {
-    return content
-        .split("\n")
-        .map((line, i) => `${i + 1}│${line}`)
-        .join("\n");
+  return content
+    .split("\n")
+    .map((line, i) => `${i + 1}│${line}`)
+    .join("\n");
 };
 
 /**
@@ -82,17 +82,17 @@ const numberLines = (content) => {
  * @returns {Promise<string>}
  */
 const chatCompletion = async (messages, extraOptions = {}) => {
-    const { data } = await httpClient.post(
-        "/chat/completions",
-        { model: MODEL, temperature: 0.2, messages, ...REASONING, ...extraOptions },
-        { headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` } }
-    );
+  const { data } = await httpClient.post(
+    "/chat/completions",
+    { model: MODEL, temperature: 0.2, messages, ...REASONING, ...extraOptions },
+    { headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` } },
+  );
 
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-        throw new Error("Réponse OpenRouter vide ou inattendue");
-    }
-    return content;
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("Réponse OpenRouter vide ou inattendue");
+  }
+  return content;
 };
 
 /**
@@ -102,16 +102,16 @@ const chatCompletion = async (messages, extraOptions = {}) => {
  * @returns {object|null}
  */
 const normalizeError = (error) => {
-    if (!error || !error.description) return null;
+  if (!error || !error.description) return null;
 
-    return {
-        line_number: Number.isInteger(error.line_number) ? error.line_number : null,
-        error_type: ERROR_TYPES.includes(error.error_type) ? error.error_type : "style",
-        severity: SEVERITIES.includes(error.severity) ? error.severity : "medium",
-        description: String(error.description),
-        code_snippet: error.code_snippet ?? null,
-        suggested_fix: error.suggested_fix ?? null,
-    };
+  return {
+    line_number: Number.isInteger(error.line_number) ? error.line_number : null,
+    error_type: ERROR_TYPES.includes(error.error_type) ? error.error_type : "style",
+    severity: SEVERITIES.includes(error.severity) ? error.severity : "medium",
+    description: String(error.description),
+    code_snippet: error.code_snippet ?? null,
+    suggested_fix: error.suggested_fix ?? null,
+  };
 };
 
 /**
@@ -121,36 +121,36 @@ const normalizeError = (error) => {
  * @returns {Promise<{file_summary: string, errors: object[]}>}
  */
 export const analyzeFile = async (file) => {
-    const userPrompt = `Fichier : ${file.path}
+  const userPrompt = `Fichier : ${file.path}
 Langage : ${file.language}
 
 Contenu :
 ${numberLines(file.content)}`;
 
-    const raw = await chatCompletion(
-        [
-            { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-        ],
-        { response_format: { type: "json_object" } }
-    );
+  const raw = await chatCompletion(
+    [
+      { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
+      { role: "user", content: userPrompt },
+    ],
+    { response_format: { type: "json_object" } },
+  );
 
-    // Le modèle entoure parfois le JSON de balises ```json … ``` malgré la
-    // consigne : on isole l'objet entre la première { et la dernière }.
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}");
+  // Le modèle entoure parfois le JSON de balises ```json … ``` malgré la
+  // consigne : on isole l'objet entre la première { et la dernière }.
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
 
-    let parsed;
-    try {
-        parsed = JSON.parse(raw.slice(start, end + 1));
-    } catch {
-        throw new Error(`Réponse LLM non parsable pour ${file.path}`);
-    }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    throw new Error(`Réponse LLM non parsable pour ${file.path}`);
+  }
 
-    return {
-        file_summary: parsed.file_summary ?? "",
-        errors: (parsed.errors ?? []).map(normalizeError).filter(Boolean),
-    };
+  return {
+    file_summary: parsed.file_summary ?? "",
+    errors: (parsed.errors ?? []).map(normalizeError).filter(Boolean),
+  };
 };
 
 /**
@@ -159,21 +159,19 @@ ${numberLines(file.content)}`;
  * @returns {Promise<string>}
  */
 export const generateMermaid = async (structure) => {
-    // Pour le diagramme d'architecture, on écarte les fichiers de données/config
-    // (souvent des centaines de .json/.yml) qui noieraient le schéma. On les garde
-    // pour l'analyse, mais pas pour la vue d'ensemble structurelle.
-    const EXCLUDE = /\/config\/|\.(json|ya?ml|toml|lock|md|txt|properties|cfg)$/i;
-    const codeFiles = structure.filter((file) => !EXCLUDE.test(file.path));
-    // Si le projet n'a que de la config, on retombe sur la liste complète.
-    const files = codeFiles.length > 0 ? codeFiles : structure;
-    // On fournit le chemin ET le résumé de chaque fichier : avec l'instruction sur
-    // les acteurs externes ci-dessous, les résumés permettent un diagramme plus précis
-    // (services nommés individuellement, relations fines). Cf. tests §12 du journal.
-    const fileList = files
-        .map((file) => `- ${file.path}${file.summary ? ` : ${file.summary}` : ""}`)
-        .join("\n");
+  // Pour le diagramme d'architecture, on écarte les fichiers de données/config
+  // (souvent des centaines de .json/.yml) qui noieraient le schéma. On les garde
+  // pour l'analyse, mais pas pour la vue d'ensemble structurelle.
+  const EXCLUDE = /\/config\/|\.(json|ya?ml|toml|lock|md|txt|properties|cfg)$/i;
+  const codeFiles = structure.filter((file) => !EXCLUDE.test(file.path));
+  // Si le projet n'a que de la config, on retombe sur la liste complète.
+  const files = codeFiles.length > 0 ? codeFiles : structure;
+  // On fournit le chemin ET le résumé de chaque fichier : avec l'instruction sur
+  // les acteurs externes ci-dessous, les résumés permettent un diagramme plus précis
+  // (services nommés individuellement, relations fines). Cf. tests §12 du journal.
+  const fileList = files.map((file) => `- ${file.path}${file.summary ? ` : ${file.summary}` : ""}`).join("\n");
 
-    const systemPrompt = `Tu génères un diagramme Mermaid de HAUT NIVEAU décrivant l'ARCHITECTURE d'un projet à partir de sa liste de fichiers de code (chemin + rôle).
+  const systemPrompt = `Tu génères un diagramme Mermaid de HAUT NIVEAU décrivant l'ARCHITECTURE d'un projet à partir de sa liste de fichiers de code (chemin + rôle).
 
 Règles :
 - Regroupe les fichiers par DOSSIER ou par MODULE/COUCHE logique (ex: controllers, services, models, routes, components). Ne crée PAS un nœud par fichier.
@@ -186,12 +184,12 @@ Règles :
 
 Réponds UNIQUEMENT avec le code Mermaid (commençant par "graph LR"), sans balises Markdown ni texte autour.`;
 
-    const content = await chatCompletion([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Fichiers du projet :\n${fileList}` },
-    ]);
+  const content = await chatCompletion([
+    { role: "system", content: systemPrompt },
+    { role: "user", content: `Fichiers du projet :\n${fileList}` },
+  ]);
 
-    return content.trim();
+  return content.trim();
 };
 
 /**
@@ -200,16 +198,14 @@ Réponds UNIQUEMENT avec le code Mermaid (commençant par "graph LR"), sans bali
  * @returns {Promise<string>}
  */
 export const generateOverview = async (structure) => {
-    const fileList = structure
-        .map((file) => `- ${file.path}${file.summary ? ` : ${file.summary}` : ""}`)
-        .join("\n");
+  const fileList = structure.map((file) => `- ${file.path}${file.summary ? ` : ${file.summary}` : ""}`).join("\n");
 
-    const systemPrompt = `Tu es un expert en revue de code. À partir de la liste des fichiers d'un projet et de leur résumé, rédige une vue d'ensemble concise (3 à 5 phrases, en français) décrivant le rôle global du projet, son architecture et ses points notables. Réponds uniquement avec le texte, sans Markdown.`;
+  const systemPrompt = `Tu es un expert en revue de code. À partir de la liste des fichiers d'un projet et de leur résumé, rédige une vue d'ensemble concise (3 à 5 phrases, en français) décrivant le rôle global du projet, son architecture et ses points notables. Réponds uniquement avec le texte, sans Markdown.`;
 
-    const content = await chatCompletion([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Fichiers du projet :\n${fileList}` },
-    ]);
+  const content = await chatCompletion([
+    { role: "system", content: systemPrompt },
+    { role: "user", content: `Fichiers du projet :\n${fileList}` },
+  ]);
 
-    return content.trim();
+  return content.trim();
 };

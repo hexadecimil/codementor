@@ -6,6 +6,7 @@ import AppLayout from "@/layouts/AppLayout.vue";
 import StateMessage from "@/components/StateMessage.vue";
 import ErrorItem from "@/components/ErrorItem.vue";
 import MermaidDiagram from "@/components/MermaidDiagram.vue";
+import BaseButton from "@/components/BaseButton.vue";
 import { formatDate, analysisLabel } from "@/utils/format";
 
 const route = useRoute();
@@ -25,15 +26,15 @@ const isRunning = computed(() => analysis.value?.status === "queued" || analysis
 
 const allErrors = computed(() => {
   if (!analysis.value?.files) return [];
-  return analysis.value.files.flatMap((file) => file.errors.map((e) => ({ error: e, filePath: file.file_path })));
+  return analysis.value.files.flatMap((file) => file.errors.map((err) => ({ error: err, filePath: file.file_path })));
 });
 
 const errorCount = computed(() => allErrors.value.length);
 
 const counts = computed(() => {
   const c = { high: 0, medium: 0, low: 0 };
-  allErrors.value.forEach((i) => {
-    if (c[i.error.severity] !== undefined) c[i.error.severity] += 1;
+  allErrors.value.forEach((item) => {
+    if (c[item.error.severity] !== undefined) c[item.error.severity] += 1;
   });
   return c;
 });
@@ -48,13 +49,13 @@ function toggleFilter(severity) {
 
 const visibleErrors = computed(() => {
   if (!severityFilter.value) return allErrors.value;
-  return allErrors.value.filter((i) => i.error.severity === severityFilter.value);
+  return allErrors.value.filter((item) => item.error.severity === severityFilter.value);
 });
 
 const breadcrumb = computed(() => [
-  { label: "Projects", to: "/projects" },
+  { label: "Projets", to: "/projects" },
   { label: projectName.value || "…", to: analysis.value ? `/projects/${analysis.value.project_id}` : undefined },
-  { label: analysis.value ? `Analysis ${analysisLabel(analysis.value.id)}` : "…" },
+  { label: analysis.value ? `Analyse ${analysisLabel(analysis.value.id)}` : "…" },
 ]);
 
 async function loadProjectInfo(projectId) {
@@ -75,6 +76,9 @@ async function loadAnalysis() {
   error.value = "";
   progress.value = 0;
   analysis.value = null;
+  restarting.value = false;
+  projectName.value = "";
+  mainLanguage.value = "—";
 
   try {
     const { data } = await api.get(`/analyses/${route.params.id}`);
@@ -88,21 +92,30 @@ async function loadAnalysis() {
   }
 }
 
-// Polling du pourcentage toutes les 2 s.
+// Interroge le statut toutes les 2 s : met à jour la progression, puis recharge
+// le résultat complet une fois l'analyse terminée ou en échec.
 function startPolling() {
   stopPolling();
+  const targetId = route.params.id; // analyse suivie au démarrage du polling
   pollTimer = setInterval(async () => {
     try {
-      const { data } = await api.get(`/analyses/${route.params.id}/status`);
+      const { data } = await api.get(`/analyses/${targetId}/status`);
+      // L'utilisateur a navigué vers une autre analyse pendant la requête : on ignore
+      // cette réponse périmée pour ne pas écraser la progression de l'analyse courante.
+      if (targetId !== route.params.id) {
+        stopPolling();
+        return;
+      }
       progress.value = data.progress_percent;
       if (data.status === "completed" || data.status === "failed") {
         stopPolling();
-        loading.value = true;
         await loadAnalysis();
-        loading.value = false;
       }
     } catch {
+      // Suivi interrompu (réseau, session expirée) : on arrête et on le signale,
+      // au lieu de laisser le spinner tourner indéfiniment.
       stopPolling();
+      error.value = "Le suivi de l'analyse a été interrompu. Rechargez la page pour réessayer.";
     }
   }, 2000);
 }
@@ -144,7 +157,7 @@ onUnmounted(stopPolling);
             <span class="material-symbols-outlined text-primary text-4xl animate-spin">autorenew</span>
           </div>
           <div>
-            <h2 class="text-2xl md:text-3xl font-bold text-ink">Analyse du code par l'IA...</h2>
+            <h1 class="text-2xl md:text-3xl font-bold text-ink">Analyse du code par l'IA...</h1>
             <p class="text-sm text-primary mt-2 font-mono">{{ progress }}% Terminé</p>
           </div>
           <div class="w-full max-w-md h-1 bg-white/10 rounded-full overflow-hidden">
@@ -168,7 +181,7 @@ onUnmounted(stopPolling);
         <!-- En-tête (sans nb lignes, sans nb suggestions) -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h2 class="text-2xl md:text-3xl font-bold text-ink mb-2">Résultats de l'analyse</h2>
+            <h1 class="text-2xl md:text-3xl font-bold text-ink mb-2">Résultats de l'analyse</h1>
             <div class="flex flex-wrap items-center gap-3 text-muted text-sm font-mono">
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px]">calendar_today</span>
@@ -177,23 +190,19 @@ onUnmounted(stopPolling);
               <span>·</span>
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px]">description</span>
-                {{ analysis.files_total ?? "—" }} fichiers
+                {{ analysis.files_total ?? "—" }} fichier{{ analysis.files_total > 1 ? "s" : "" }}
               </span>
               <span>·</span>
               <span class="flex items-center gap-1" :class="errorCount > 0 ? 'text-danger' : 'text-primary'">
                 <span class="material-symbols-outlined text-[16px]">error</span>
-                {{ errorCount }} erreurs
+                {{ errorCount }} erreur{{ errorCount > 1 ? "s" : "" }}
               </span>
             </div>
           </div>
-          <button
-            :disabled="restarting"
-            class="px-4 py-2 bg-transparent border border-line text-ink text-sm rounded hover:bg-white/10 hover:border-muted transition-colors flex items-center gap-2 disabled:opacity-50"
-            @click="reanalyze"
-          >
+          <BaseButton variant="secondary" :disabled="restarting" @click="reanalyze">
             <span class="material-symbols-outlined text-[18px]">refresh</span>
             {{ restarting ? "Relance…" : "Relancer" }}
-          </button>
+          </BaseButton>
         </div>
 
         <!-- Diagramme de structure -->
@@ -225,27 +234,31 @@ onUnmounted(stopPolling);
                 class="px-2 py-1 border rounded transition-colors"
                 :class="severityFilter === 'high' ? 'bg-danger text-background border-danger' : 'bg-danger/20 border-danger/50 text-danger hover:bg-danger/30'"
                 @click="toggleFilter('high')"
-              >High ({{ counts.high }})</button>
+              >Élevée ({{ counts.high }})</button>
               <button
                 v-if="counts.medium"
                 class="px-2 py-1 border rounded transition-colors"
                 :class="severityFilter === 'medium' ? 'bg-amber-400 text-background border-amber-400' : 'bg-amber-400/10 border-amber-400/30 text-amber-400 hover:bg-amber-400/20'"
                 @click="toggleFilter('medium')"
-              >Medium ({{ counts.medium }})</button>
+              >Moyenne ({{ counts.medium }})</button>
               <button
                 v-if="counts.low"
                 class="px-2 py-1 border rounded transition-colors"
                 :class="severityFilter === 'low' ? 'bg-primary text-background border-primary' : 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'"
                 @click="toggleFilter('low')"
-              >Low ({{ counts.low }})</button>
+              >Faible ({{ counts.low }})</button>
             </div>
           </div>
 
-          <StateMessage v-if="allErrors.length === 0" type="empty" message="Aucune erreur détectée. Beau travail !" />
+          <StateMessage
+            v-if="visibleErrors.length === 0"
+            type="empty"
+            :message="severityFilter ? 'Aucune erreur de cette sévérité.' : 'Aucune erreur détectée. Beau travail !'"
+          />
           <ErrorItem
-            v-for="(item, index) in visibleErrors"
+            v-for="item in visibleErrors"
             v-else
-            :key="index"
+            :key="`${item.filePath}:${item.error.line_number}:${item.error.error_type}`"
             :error="item.error"
             :file-path="item.filePath"
           />

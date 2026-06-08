@@ -18,10 +18,7 @@ services:
             - '3306:3306'
         command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
         volumes:
-            # Données déplacées hors OneDrive (évite le versioning qui faisait exploser le quota).
-            # Réactiver la ligne ci-dessous quand le projet sera entièrement hors OneDrive :
-            # - ./mysql/data:/var/lib/mysql
-            - C:/docker-data/codementor-mysql:/var/lib/mysql
+            - ./mysql/data:/var/lib/mysql
             - ./mysql/script.sql:/docker-entrypoint-initdb.d/init.sql
 
     #######################################
