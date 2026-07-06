@@ -1,9 +1,9 @@
 {
-    "name": "server",
+    "name": "codementor-server",
     "version": "1.0.0",
     "description": "Backend de CodeMentor (TPI 2026 - Thibaud Gamez)",
-    "license": "ISC",
-    "author": "",
+    "license": "MIT",
+    "author": "Thibaud Gamez",
     "type": "module",
     "main": "server.js",
     "scripts": {

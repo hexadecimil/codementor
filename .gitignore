@@ -1,5 +1,8 @@
 .claude/
 node_modules/
+Thumbs.db
+.DS_Store
+desktop.ini
 .env
 *.log
 mysql/data/

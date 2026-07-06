@@ -1,22 +1,42 @@
 # CodeMentor
 
-CodeMentor est une application web d'analyse de code assistée par IA, réalisée dans le cadre du
-Travail Pratique Individuel (TPI 2026) de Thibaud Gamez.
+![Node.js 20](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
+![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white)
+![Vite 6](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)
+![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Licence MIT](https://img.shields.io/badge/Licence-MIT-green)
+
+CodeMentor est une application web qui analyse un dépôt GitHub avec l'aide d'un LLM. Elle parcourt
+le code, génère une explication de chaque fichier, détecte des erreurs potentielles avec une
+correction suggérée et produit un diagramme Mermaid de la structure du projet. L'utilisateur se
+connecte avec son compte GitHub, ajoute un dépôt auquel il a accès et lance l'analyse depuis
+l'interface web.
+
+Projet réalisé dans le cadre du Travail Pratique Individuel (TPI 2026) de Thibaud Gamez.
 
 > **Provenance.** Ce projet a été développé de février à juin 2026 sur le GitLab de l'École des
 > Métiers de Fribourg (`gitlab.emf-infopro.ch`), dépôt privé utilisé pendant le TPI. Ce dépôt GitHub
 > en est le miroir public, publié après la fin du travail : l'historique des commits est celui du
 > développement d'origine.
 
-Après connexion via GitHub, l'utilisateur ajoute un projet lié à un dépôt GitHub et lance une
-analyse. L'application parcourt le code, génère une explication de chaque fichier, détecte des
-erreurs potentielles avec une correction suggérée, et produit un diagramme Mermaid de la structure
-du projet.
-
 > La documentation complète du projet (analyse, conception, tests, etc.) se trouve dans le **rapport
 > de TPI** (`doc/GAMEZ_rapport_TPI.docx`). Ce README constitue la **documentation d'utilisation** du
 > projet : il explique comment installer, configurer et utiliser les deux applications (l'interface
 > web et l'API backend).
+
+## Aperçu
+
+![Page de résultats d'une analyse](doc/screenshots/analyse_resultats.png)
+
+*Page de résultats : diagramme interactif de la structure du dépôt analysé (zoom et déplacement à
+la souris).*
+
+![Erreurs détectées avec correction suggérée](doc/screenshots/erreurs_detectees.png)
+
+*Vue d'ensemble rédigée par l'IA et liste des erreurs détectées, chacune avec l'extrait de code
+concerné et la correction suggérée.*
 
 ## Architecture
 
@@ -44,14 +64,13 @@ Depuis la racine du projet, lancer la base et phpMyAdmin :
 docker compose up -d
 ```
 
-Cela démarre un conteneur **MySQL** (port 3306) et **phpMyAdmin** (http://localhost:8080).
+Cela démarre deux conteneurs, **MySQL** (port 3306) et **phpMyAdmin** (http://localhost:8080).
 Le schéma `mysql/script.sql` est exécuté automatiquement au premier démarrage : toutes les tables
 sont créées sans action supplémentaire.
 
-> Le volume de données pointe vers `C:/docker-data/codementor-mysql` dans `docker-compose.yml`.
-> Sous Windows, créer ce dossier avant le premier lancement (`mkdir C:\docker-data\codementor-mysql`).
-> Sur une autre plateforme ou pour un environnement portable, remplacer ce chemin par un volume
-> Docker nommé (`mysql-data:/var/lib/mysql`, déclaré dans une section `volumes:` du fichier).
+> Les données MySQL sont stockées dans `./mysql/data`, un chemin relatif au projet créé
+> automatiquement au premier lancement et ignoré par git. Rien à créer à la main. Pour repartir
+> d'une base vierge, supprimer ce dossier puis relancer `docker compose up -d`.
 
 ### 2. Backend
 
@@ -124,7 +143,7 @@ Toutes les variables sont à renseigner dans `server/.env` (copié depuis `serve
 | Frontend | http://localhost:5173 |
 | API backend | http://localhost:3000/codementor/api |
 | Documentation Swagger | http://localhost:3000/codementor/api-docs |
-| phpMyAdmin | http://localhost:8080 |
+| phpMyAdmin (connexion `root` / `emf123`) | http://localhost:8080 |
 
 ## Utilisation
 
@@ -185,3 +204,7 @@ Swagger, sur http://localhost:3000/codementor/api-docs.
 > Les adresses ci-dessus correspondent à l'installation locale par défaut. Tous les endpoints sont
 > relatifs à la base `/codementor/api` (par exemple `GET /projects` correspond à
 > `http://localhost:3000/codementor/api/projects`).
+
+## Licence
+
+Code publié sous licence [MIT](LICENSE).
