@@ -3,6 +3,11 @@
 CodeMentor est une application web d'analyse de code assistée par IA, réalisée dans le cadre du
 Travail Pratique Individuel (TPI 2026) de Thibaud Gamez.
 
+> **Provenance.** Ce projet a été développé de février à juin 2026 sur le GitLab de l'École des
+> Métiers de Fribourg (`gitlab.emf-infopro.ch`), dépôt privé utilisé pendant le TPI. Ce dépôt GitHub
+> en est le miroir public, publié après la fin du travail : l'historique des commits est celui du
+> développement d'origine.
+
 Après connexion via GitHub, l'utilisateur ajoute un projet lié à un dépôt GitHub et lance une
 analyse. L'application parcourt le code, génère une explication de chaque fichier, détecte des
 erreurs potentielles avec une correction suggérée, et produit un diagramme Mermaid de la structure
