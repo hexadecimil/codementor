@@ -1,0 +1,43 @@
+name: codementor-db
+services:
+    #######################################
+    # MySQL
+    #######################################
+
+    service_mysql:
+        image: mysql:lts
+        container_name: mysql_db
+        restart: always
+        environment:
+            TZ: Europe/Zurich
+            MYSQL_ROOT_PASSWORD: emf123
+            MYSQL_DATABASE: codementor
+            MYSQL_USER: emf
+            MYSQL_PASSWORD: emf123
+        ports:
+            - '3306:3306'
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+        volumes:
+            - ./mysql/data:/var/lib/mysql
+            - ./mysql/script.sql:/docker-entrypoint-initdb.d/init.sql
+
+    #######################################
+    # phpmyadmin
+    #######################################
+
+    service_phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        restart: always
+        environment:
+            TZ: Europe/Zurich
+            PMA_ARBITRARY: 1
+            MYSQL_ROOT_PASSWORD: emf123
+            PMA_HOST: service_mysql
+            PMA_USER: root
+            PMA_PASSWORD: emf123
+            PMA_PMADB: codementor
+        ports:
+            - '8080:80'
+        depends_on:
+            - service_mysql

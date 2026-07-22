@@ -1,0 +1,28 @@
+{
+    "name": "codementor-server",
+    "version": "1.0.0",
+    "description": "Backend de CodeMentor (TPI 2026 - Thibaud Gamez)",
+    "license": "MIT",
+    "author": "Thibaud Gamez",
+    "type": "module",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "dependencies": {
+        "@octokit/oauth-app": "^8.0.3",
+        "axios": "^1.7.0",
+        "body-parser": "^2.2.2",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "express": "^5.2.1",
+        "express-joi-validation": "^6.1.0",
+        "express-session": "^1.18.0",
+        "joi": "^17.13.3",
+        "mysql2": "^3.17.4",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1",
+        "xss": "^1.0.15"
+    }
+}

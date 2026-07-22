@@ -1,0 +1,14 @@
+{
+    "name": "tpi2026-codementor",
+    "version": "1.0.0",
+    "description": "CodeMentor - TPI 2026 - Thibaud Gamez",
+    "author": "Thibaud Gamez",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently -n server,client -c blue,green \"npm:dev --prefix server\" \"npm:dev --prefix client\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.0.0"
+    }
+}
